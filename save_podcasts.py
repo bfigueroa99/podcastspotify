@@ -285,15 +285,10 @@ class SpotifyOldestEpisodeManager:
         """
         Verifica si un episodio es válido para guardar:
         - Tiene datos básicos necesarios
-        - No está ya guardado en 'Mis Podcasts'
         - No está marcado como completamente reproducido
         - No es contenido exclusivo
         """
         if not (episode and 'uri' in episode and 'release_date' in episode and 'id' in episode):
-            return False
-        
-        # No guardar si ya está en 'Mis Podcasts'
-        if episode['uri'] in already_saved_uris:
             return False
         
         # No guardar si está completamente reproducido
@@ -325,6 +320,9 @@ class SpotifyOldestEpisodeManager:
             logger.info("No se encontraron episodios para guardar.")
             return
         
+        # Obtener los URIs de episodios ya guardados
+        already_saved_uris = self.get_already_saved_episode_uris()
+        
         logger.info(f"\n=== GUARDANDO {len(oldest_episodes)} EPISODIOS ===")
         
         # Mostrar lista de episodios que se van a guardar
@@ -337,8 +335,15 @@ class SpotifyOldestEpisodeManager:
         
         # Guardar cada episodio
         success_count = 0
+        skip_count = 0
         for i, episode in enumerate(oldest_episodes, 1):
             try:
+                # No guardar si ya está en 'Mis Podcasts'
+                if episode.uri in already_saved_uris:
+                    logger.info(f"  ⚠ {i:2d}/{len(oldest_episodes)} - Ya guardado: {episode.show_name}")
+                    skip_count += 1
+                    continue
+                    
                 self._safe_request(
                     self.sp.current_user_saved_episodes_add, 
                     [episode.uri]
@@ -353,6 +358,7 @@ class SpotifyOldestEpisodeManager:
         
         logger.info(f"\n=== PROCESO COMPLETADO ===")
         logger.info(f"Episodios guardados exitosamente: {success_count}/{len(oldest_episodes)}")
+        logger.info(f"Episodios ya guardados (omitidos): {skip_count}/{len(oldest_episodes)}")
         
         if success_count > 0:
             logger.info("Los episodios más viejos han sido guardados en 'Mis Podcasts'")
