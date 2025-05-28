@@ -1,12 +1,21 @@
+import os
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
+from dotenv import load_dotenv
 
-# Replace with your Spotify API credentials
-CLIENT_ID = 'c798243109ac4543be01179d648837d9'
-CLIENT_SECRET = '4ec223e6d89d43f5b87c1d6aa1b2a8c7'
-REDIRECT_URI = 'http://127.0.0.1:8888/callback'
+# Load environment variables
+load_dotenv()
+
+# Get Spotify API credentials from environment variables
+CLIENT_ID = os.getenv('SPOTIFY_CLIENT_ID')
+CLIENT_SECRET = os.getenv('SPOTIFY_CLIENT_SECRET')
+REDIRECT_URI = os.getenv('SPOTIFY_REDIRECT_URI', 'http://127.0.0.1:8888/callback')
 
 def eliminar_todos_los_podcasts():
+    # Validate credentials
+    if not all([CLIENT_ID, CLIENT_SECRET]):
+        raise ValueError("Faltan credenciales de Spotify. Asegúrate de configurar SPOTIFY_CLIENT_ID y SPOTIFY_CLIENT_SECRET en tu archivo .env")
+    
     scope = "user-library-read user-library-modify"
     sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=CLIENT_ID,
                                                    client_secret=CLIENT_SECRET,
